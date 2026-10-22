@@ -1,0 +1,258 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f0f0;
+        margin: 0;
+        padding: 0;
+    }
+
+    .weather-report {
+        text-align:left;
+        padding: 20px;
+    }
+
+    .top h1 {
+        margin-bottom: 10px;
+    }
+
+    #citysearch {
+       position: absolute;
+       top: 40px;
+       left: 75%;
+    }
+
+    #citysearch input {
+        padding: 10px;
+        font-size: 16px;
+        width: 200px;
+        border: 1px solid #ccc;
+        border-radius: 7px;
+    }
+
+    #citysearch button {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #007BFF;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    #citysearch button:hover {
+        background-color: #0056b3;
+    }
+
+    .weather-info {
+        text-align: center;
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .weather-info div {
+        margin-bottom: 10px;
+    }
+
+    #cityname {
+        font-size: 50px;
+        font-weight: bold;
+        text-align: left;
+    }
+
+    .temperature {
+        width:200px;
+        height: 160px;
+        border: 2px solid black;
+        border-radius: 5px;
+        box-shadow: 0 0 5px black;
+    }
+
+    #temperature {
+        font-size: 30px;
+        text-align: center;
+        margin-top: 50px;
+    }
+
+    .humidity {
+        width: 200px;
+        height: 160px;
+        border: 2px solid black;
+        border-radius: 5px;
+        box-shadow: 0 0 5px black;
+        display: inline-block;
+        margin: 20px;
+        position:absolute;
+        left: 25%;
+        top: 33%;
+    }
+
+    #humidity {
+        font-size: 40px;
+        text-align: center;
+        margin-top: 50px;
+    }
+
+    .description {
+        width: 200px;
+        height: 160px;
+        border: 2px solid black;
+        border-radius: 5px;
+        box-shadow: 0 0 5px black;
+        display: inline-block;
+        position: absolute;
+        top:35%;
+    }
+
+    #description {
+        font-size: 20px;
+        text-align: center;
+        margin-top: 50px;
+    }
+
+    .windspeed {
+        width: 200px;
+        height: 160px;
+        border: 2px solid black;
+        border-radius: 5px;
+        box-shadow: 0 0 5px black;
+        display: inline-block;
+        position: absolute;
+        top:35%;
+        left: 75%;
+    }
+    #windspeed {
+        font-size: 30px;
+        text-align: center;
+        margin-top: 50px;
+    }
+</style>
+
+<body>
+    <div class="weather-report">
+        <header class="top">
+            <h1>Vamsi's Weather Report</h1>
+            <form id="citysearch">
+                <input type="text" id="city" placeholder="Enter ur city name" required>
+                <button type="submit">Get Weather</button>
+            </form>
+        </header>
+    </div>
+
+    <section class="weather-info">
+        <div class="cityinfo">
+            <h2 id="cityname">City Name</h2>
+        </div>
+
+        <div class="temperature">
+            <h2>Temperture</h2>
+            <b><p id="temperature">-- °C</p></b>
+        </div>
+
+        <div class="humidity">
+            <h2>Humidity</h2>
+            <p id="humidity">-- %</p>
+        </div>
+
+        <div class="description">
+            <h2>Description</h2>
+            <p id="description">--</p>
+        </div>
+
+        <div class="windspeed">
+            <h2>wind speed</h2>
+            <p id="windspeed">--</p>
+        </div>
+    </section>
+
+<script>
+    // Search for a city
+    document.getElementById("citysearch").addEventListener("submit", function(event) {
+        event.preventDefault();
+
+        const city = document.getElementById("city").value.trim();
+
+        if (city !== "") {
+            fetchWeather(city);
+        }
+    });
+
+    // Fetch weather data
+    async function fetchWeather(city) {
+        try {
+            // Get city coordinates
+            const locationURL =
+                `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`;
+
+            const locationResponse = await fetch(locationURL);
+            const locationData = await locationResponse.json();
+
+            if (!locationData.results || locationData.results.length === 0) {
+                alert("City not found. Please try again.");
+                return;
+            }
+
+            const location = locationData.results[0];
+
+            // Get current weather
+            const weatherURL =
+                `https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`;
+
+            const weatherResponse = await fetch(weatherURL);
+            const data = await weatherResponse.json();
+
+            if (!weatherResponse.ok || !data.current) {
+                throw new Error("Weather data unavailable");
+            }
+
+            // Display city name
+            document.getElementById("cityname").textContent = location.name;
+
+            // Display temperature
+            document.getElementById("temperature").textContent =
+                data.current.temperature_2m + " °C";
+
+            // Display humidity
+            document.getElementById("humidity").textContent =
+                data.current.relative_humidity_2m + "%";
+
+            // Display description
+            document.getElementById("description").textContent =
+                getWeatherDescription(data.current.weather_code);
+
+            // Display wind speed
+            document.getElementById("windspeed").textContent =
+                data.current.wind_speed_10m + " km/h";
+
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Unable to fetch weather. Check your internet connection.");
+        }
+    }
+
+    // Convert weather codes into descriptions
+    function getWeatherDescription(code) {
+        if (code === 0) return "Clear Sky ☀️";
+        if (code === 1) return "Mainly Clear 🌤️";
+        if (code === 2) return "Partly Cloudy 🌤️";
+        if (code === 3) return "Cloudy ☁️";
+        if ([45, 48].includes(code)) return "Foggy 🌫️";
+        if ([51, 53, 55, 56, 57].includes(code)) return "Drizzle 🌦️";
+        if ([61, 63, 65, 80, 81, 82].includes(code)) return "Rainy 🌧️";
+        if ([71, 73, 75, 77, 85, 86].includes(code)) return "Snowy ❄️";
+        if ([95, 96, 99].includes(code)) return "Thunderstorm ⛈️";
+
+        return "Unknown Weather";
+    }
+</script>
+</body>
+</html>
